@@ -8,7 +8,6 @@ const { json } = require('body-parser')
 
 
 const checkAdminRole =async (userId)=> {
-
   try{
     const user =await User.findById(userId)
     return user.role == 'admin'
@@ -18,10 +17,10 @@ const checkAdminRole =async (userId)=> {
   }
 }
 
-router.post('/',async(req,res)=>{
+router.post('/',jwtAuthMiddleware,async(req,res)=>{
 
 try {
-  if(! await checkAdminRole(req.user.id))
+  if( !await checkAdminRole(req.user.id))
   {
     return res.status(403).json({message:"does not have admin role"})
   }
@@ -37,7 +36,7 @@ try {
   
   // const token = generateToken(payload)
 
-  res.status(200)
+  res.status(200).json(response)
 } catch (err) {
   res.status(500).json({error:'internal error'})
 }
@@ -65,14 +64,14 @@ router.get('/',async (req,res)=>{
 router.put('/:candidateId',async(req,res)=>{
 
 try{
-  if(!checkAdminRole(req.user.id))
+  if(! await checkAdminRole(req.user.id))
   {
-    return res.status(403).json({message:"admoin role required"})
+    return res.status(403).json({message:"admin role required"})
   }
   // const userId = req.user; // extract id from jwt token
     const id = req.params.candidateId;
 const data = req.body
-const response =await Candidate.findByIdAndUpdate(candidateId,data,{
+const response =await Candidate.findByIdAndUpdate(id,data,{
   new:true,
   runValidators:true
 })
@@ -90,7 +89,7 @@ catch(err)
 router.delete('/:id',async(req,res)=>{
   try{
 
-    if(!checkAdminRole(req.user.id))
+    if(!await checkAdminRole(req.user.id))
   {
     return res.status(403).json({message:"admin role required"})
   }

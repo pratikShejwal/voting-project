@@ -8,13 +8,22 @@ router.post('/signup',async(req,res)=>{
 
 try {
    const data = req.body //bodyParser stores data on request body
-  const newUser = new User(data)
+ 
+   //logic for the single admin
+   if(data.role == "admin")
+   {
+     const adminExists = await User.findOne({role:"admin"})
+     if(adminExists) return res.status(400).json({message:"Admin already exists"})
+   }
+   
 
-  const response = await newUser.save()
+   const newUser = new User(data)
 
-  const payload = {
+   const response = await newUser.save()
+
+   const payload = {
     id:response.id,
-  }
+   }
   console.log(JSON.stringify(payload));
   
   const token = generateToken(payload)
@@ -31,9 +40,6 @@ router.post('/login',async(req,res)=>{
 try {
   const {aadharCardNumber,password} = req.body
   const voter =await User.findOne({aadharCardNumber:aadharCardNumber})
-
- 
-
   //generate token
     const payload = {
       id:voter.id,
