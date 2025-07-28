@@ -61,7 +61,7 @@ router.get('/',async (req,res)=>{
 
 
 
-router.put('/:candidateId',async(req,res)=>{
+router.put('/:candidateId',jwtAuthMiddleware,async(req,res)=>{
 
 try{
   if(! await checkAdminRole(req.user.id))
@@ -86,9 +86,8 @@ catch(err)
 }
 })
 
-router.delete('/:id',async(req,res)=>{
+router.delete('/:id',jwtAuthMiddleware,async(req,res)=>{
   try{
-
     if(!await checkAdminRole(req.user.id))
   {
     return res.status(403).json({message:"admin role required"})
@@ -102,5 +101,47 @@ router.delete('/:id',async(req,res)=>{
     res.status(500).json({error:"Internal server error"})
   }
 })
+
+router.post('/vote/:candidateId',jwtAuthMiddleware,async(req,res)=>{
+  
+  try{
+
+  
+  const id = req.params.candidateId;
+  const userId = req.user.id;
+
+  
+  const candidate = await Candidate.find(id)
+  if(!candidate){
+    res.status(404).json({message:"not found"})
+  }
+  const user = await User.find(userId)
+  if(!user){
+    return res.status(404).json({message:"No user found"})
+  }
+  
+if(user.isVoted) return res.status(400).json({message:"already voted"})
+if(user.role == 'admin') return res.status(403).json({message:"admin cant vote"})
+
+candidate.votes.push({user:userId})
+candidate.voteCount++;
+await candidate.save();
+
+
+user.isVoted = true;
+await user.save();
+
+return res.status(200).json({message:"Voted Succeesfully"})
+  }
+  catch(err)
+  {
+    res.status(500).json({message:"error occured"})
+  }
+
+
+})
+
+
+
 
 module.exports = router
